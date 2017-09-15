@@ -20,7 +20,7 @@ export default {
   },
 
   mounted () {
-
+    
     gantt.attachEvent('onTaskSelected', (id) => {
       let task = gantt.getTask(id)
       this.$emit('task-selected', task)
@@ -60,7 +60,22 @@ export default {
     // FIXME How to update the fields in gantt.config based on the ones defined
     // in $props.config without overwriting gantt.config entirely?
     //gantt.config.readonly = this.$props.config.readonly
+
+    // Set diagram as read only
     gantt.config.readonly = true
+
+    // Configures columns
+    // Reference: https://docs.dhtmlx.com/gantt/api__gantt_columns_config.html
+    gantt.config.columns = [
+      {
+        name: "text",
+        label: "ILT Classes",
+        tree: true,
+        width: "*"  // == use the remaining space
+      }
+    ]
+
+    // Initialize diagram and parse data
     gantt.init(this.$refs.gantt)
     gantt.parse(this.$props.tasks)
   }
