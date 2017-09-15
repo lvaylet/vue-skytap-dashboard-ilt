@@ -1,6 +1,6 @@
-# gantt-vue
+# vue-skytap-dashboard-ilt
 
-> A Vue.js project
+> A dashboard to monitor upcoming instructor-led training (ILT) classes and Skytap capacity
 
 ## Build Setup
 
