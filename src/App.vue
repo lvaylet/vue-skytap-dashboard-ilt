@@ -21,7 +21,14 @@
         <li class="gantt-message" v-for="message in messages">{{ message }}</li>
       </ul>
     </div>
-    <gantt class="left-container" :tasks="tasks" @task-updated="logTaskUpdate" @link-updated="logLinkUpdate" @task-selected="selectTask"></gantt>
+    <!-- @task-updated and @link-updated are defined for sample only, as the grid is read-only -->
+    <gantt
+      class="left-container"
+      :tasks="tasks"
+      @task-updated="logTaskUpdate"
+      @link-updated="logLinkUpdate"
+      @task-selected="selectTask"
+    ></gantt>
   </div>
 </template>
 
