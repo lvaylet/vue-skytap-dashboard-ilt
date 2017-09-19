@@ -20,7 +20,7 @@ export default {
   },
 
   mounted () {
-    
+
     gantt.attachEvent('onTaskSelected', (id) => {
       let task = gantt.getTask(id)
       this.$emit('task-selected', task)
@@ -78,6 +78,13 @@ export default {
     // Initialize diagram and parse data
     gantt.init(this.$refs.gantt)
     gantt.parse(this.$props.tasks)
+  },
+  watch: {
+    tasks: function (newValue) {
+      console.log('Refreshing Gantt chart with new data...')
+      gantt.parse(this.$props.tasks)
+      gantt.render();
+    }
   }
 }
 </script>

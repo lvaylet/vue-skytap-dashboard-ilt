@@ -2,15 +2,15 @@
   <div class="container">
     <div class="right-container">
       <div class="gantt-selected-info">
-        <div v-if="selectedTask">
-          <h2>{{ selectedTask.text }}</h2>
+        <div v-if="selectedIltClass">
+          <h2>{{ selectedIltClass.text }}</h2>
           <ul>
-            <li><strong>Start Date: </strong>{{ selectedTask.start_date | niceDate }}</li>
-            <li><strong>End Date: </strong>{{ selectedTask.end_date | niceDate }}</li>
-            <li><strong>Concurrent SVMs: </strong>{{ selectedTask.svms }}</li>
-            <li><strong>Storage: </strong>{{ selectedTask.storage }} GB</li>
-            <li><a :href="'http://login.salesforce.com/' + selectedTask.salesforce_id" target="_blank"><strong>Open in Salesforce</strong></a></li>
-            <li><a :href="'https://cloud.skytap.com/configurations/' + selectedTask.skytap_environment_id" target="_blank"><strong>Open in Skytap</strong></a></li>
+            <li><strong>Start Date: </strong>{{ selectedIltClass.start_date | niceDate }}</li>
+            <li><strong>End Date: </strong>{{ selectedIltClass.end_date | niceDate }}</li>
+            <li><strong>Concurrent SVMs: </strong>{{ selectedIltClass.svms }}</li>
+            <li><strong>Storage: </strong>{{ selectedIltClass.storage }} GB</li>
+            <li><a :href="'http://login.salesforce.com/' + selectedIltClass.salesforce_id" target="_blank"><strong>Open in Salesforce</strong></a></li>
+            <li><a :href="'https://cloud.skytap.com/configurations/' + selectedIltClass.skytap_environment_id" target="_blank"><strong>Open in Skytap</strong></a></li>
           </ul>
         </div>
         <div v-else class="select-task-prompt">
@@ -24,16 +24,149 @@
     <!-- @task-updated and @link-updated are defined for sample only, as the grid is read-only -->
     <gantt
       class="left-container"
-      :tasks="tasks"
+      :tasks="upcomingIltClasses"
       @task-updated="logTaskUpdate"
       @link-updated="logLinkUpdate"
-      @task-selected="selectTask"
+      @task-selected="selectIltClass"
     ></gantt>
   </div>
 </template>
 
 <script>
 import Gantt from './components/Gantt.vue'
+import axios from 'axios'
+
+// TODO Get this IP address from ENV in Dockerfile
+const TRAINING_OPS_SERVER_IP = 'localhost'  // '10.42.100.179'
+const HTTP_REST_API = axios.create({
+  baseURL: `http://${TRAINING_OPS_SERVER_IP}:5050/api/`,
+  headers: {
+    'Access-Control-Allow-Origin': '*' // for CORS to work properly
+  }
+})
+
+function logAxiosError (error) {
+  if (error.response) {
+    // The request was made and the server responded with a status code that
+    // falls out of the range of 2xx
+    console.log(error.response.data)
+    console.log(error.response.status)
+    console.log(error.response.headers)
+  } else if (error.request) {
+    // The request was made but no response was received. `error.request` is an
+    // instance of XMLHttpRequest in the browser and an instance of
+    // http.ClientRequest in node.js.
+    console.log(error.request)
+  } else {
+    // Something happened in setting up the request that triggered an error
+    console.log('Error', error.message)
+  }
+  console.log(error.config)
+}
+
+function raw2Gantt (data) {
+  // Transform raw data from REST API to Gantt-compatible format.
+  //
+  // The output is a dictionary whose keys are region names ('APAC', 'EMEA', 'US-East' or 'US-West') and values are class details.
+  //
+  // {
+  //     "EMEA": [
+  //         {
+  //             "Id": "a9u390000004X5uAAE",
+  //             "Name": "Orange Cameroun",
+  //             "Full_Name__c": "ILT = 6.3 DI Advanced - FR @ Orange Cameroun, QU-10325182985 [Sep 19 - Sep 19, 2017]",
+  //             "Start_Date__c": "2017-09-19",
+  //             "End_Date__c": "2017-09-19",
+  //             "Environment_ID__c": "22798724",
+  //             "Attendee_Count__c": 6.0,
+  //             "Region__c": "EMEA",
+  //             "svms": 156,
+  //             "storage": 910.0
+  //         },
+  //         {
+  //             "Id": "a9u390000004XBOAA2",
+  //             "Name": "Orange Cameroun",
+  //             "Full_Name__c": "ILT = 6.4 DI Administration @ Orange Cameroun, QU-10325182985 [Sep 19 - Sep 19, 2017]",
+  //             "Start_Date__c": "2017-09-19",
+  //             "End_Date__c": "2017-09-19",
+  //             "Environment_ID__c": "22798988",
+  //             "Attendee_Count__c": 6.0,
+  //             "Region__c": "EMEA",
+  //             "svms": 182,
+  //             "storage": 780.0
+  //         }
+  //     ],
+  //     "US-East": [
+  //         {
+  //             "Id": "a9u390000004XBOAA3",
+  //             "Name": "Tyson",
+  //             "Full_Name__c": "ILT = 6.3 Big Data Basics @ Tyson, QU-10325182986 [Sep 19 - Sep 19, 2017]",
+  //             "Start_Date__c": "2017-09-19",
+  //             "End_Date__c": "2017-09-19",
+  //             "Environment_ID__c": "22798990",
+  //             "Attendee_Count__c": 4.0,
+  //             "Region__c": "US-East",
+  //             "svms": 168,
+  //             "storage": 590.0
+  //         }
+  //     ]
+  // }
+  //
+  // The expected format for the Gantt chart is:
+  //
+  // [
+  //   ...
+  //   {
+  //     id: 7,
+  //     text: "US-East",
+  //     open: true
+  //   },
+  //   {
+  //     id: 8,
+  //     text: "6.3 Big Data Advanced - Spark & 6.3 Big Data Advanced - MapReduce & 6.3 Big Data Basics Ed 2 @ TD Bank",
+  //     start_date: "20-09-2017",
+  //     duration: 2,
+  //     open: true,
+  //     parent: 7,
+  //     svms: 390,
+  //     storage: 1520,
+  //     salesforce_id: "a9u390000004PLV",
+  //     skytap_environment_id: "22779816"
+  //   },
+  //   ...
+  // ]
+  return {
+    data: [
+      {
+        id: 1,
+        text: "APAC",
+        open: true
+      },
+      {
+        id: 2,
+        text: "6.3 DI Basics @ Duravit",
+        start_date: "03-09-2017",
+        duration:2,
+        open: true,
+        parent: 1,
+        svms: 156,
+        storage: 910,
+        salesforce_id: "a9u390000004Cjj",
+        skytap_environment_id: "22401248"
+      },
+      {
+        id: 3,
+        text: "ILT Class #2",
+        start_date: "02-09-2017",
+        duration:7,
+        open: true,
+        parent: 1,
+        svms: 240,
+        storage: 580
+      }
+    ]
+  }
+}
 
 export default {
   name: 'app',
@@ -42,7 +175,7 @@ export default {
   },
   data () {
     return {
-      tasks: {
+      upcomingIltClasses: {
         data: [
           {
             id: 1,
@@ -150,8 +283,9 @@ export default {
           }
         ]
       },
-      selectedTask: null,
-      messages: []
+      selectedIltClass: null,
+      messages: [],
+      loading: false
     }
   },
   filters: {
@@ -168,8 +302,8 @@ export default {
     }
   },
   methods: {
-    selectTask (task) {
-      this.selectedTask = task
+    selectIltClass (iltClass) {
+      this.selectedIltClass = iltClass
     },
 
     addMessage (message) {
@@ -179,9 +313,9 @@ export default {
       }
     },
 
-    logTaskUpdate (id, mode, task) {
-      let text = (task && task.text ? ` (${task.text})`: '')
-      let message = `Task ${mode}: ${id} ${text}`
+    logTaskUpdate (id, mode, iltClass) {
+      let text = (iltClass && iltClass.text ? ` (${iltClass.text})`: '')
+      let message = `Class ${mode}: ${id} ${text}`
       this.addMessage(message)
     },
 
@@ -192,6 +326,19 @@ export default {
       }
       this.addMessage(message)
     }
+  },
+  created () {
+    // Fetch results from REST API and display as Gantt chart
+    this.loading = true
+    HTTP_REST_API.get('/upcoming-ilt-classes')
+      .then(response => {
+        this.loading = false
+        this.upcomingIltClasses = raw2Gantt(response.data)
+      })
+      .catch(e => {
+        this.loading = false
+        logAxiosError(e)
+      })
   }
 }
 </script>
