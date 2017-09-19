@@ -82,8 +82,8 @@ export default {
   watch: {
     tasks: function (newValue) {
       console.log('Refreshing Gantt chart with new data...')
-      gantt.parse(this.$props.tasks)
-      gantt.render();
+      gantt.clearAll()
+      gantt.parse(newValue)
     }
   }
 }
