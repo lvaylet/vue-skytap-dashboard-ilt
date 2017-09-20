@@ -1,3 +1,5 @@
+<!-- TODO Make spotting troublesome days easier by adding concurrent svms per day view, in a dedicated row -->
+
 <template>
   <div class="container">
     <div class="right-container">
@@ -127,13 +129,16 @@ function raw2Gantt (data) {
 
   // Initialize result with all possible regions
   _.forEach(data, function (iltClasses, dataCenter) {
+
     result.data.push({
       id: dataCenter,
       text: dataCenter,
       open: true  // so the list of classes in this region is displayed on startup
     })
+
     // Add the ILT classes and link them to their parent (created above)
     _.forEach(iltClasses, function (iltClass) {
+
       // Expected format of a class:
       //   {
       //     id: 8,
