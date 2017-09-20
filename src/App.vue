@@ -35,6 +35,8 @@
 <script>
 import Gantt from './components/Gantt.vue'
 import axios from 'axios'
+import _ from 'lodash'
+import moment from 'moment'
 
 // TODO Get this IP address from ENV in Dockerfile
 const TRAINING_OPS_SERVER_IP = 'localhost'  // '10.42.100.179'
@@ -64,10 +66,15 @@ function logAxiosError (error) {
   console.log(error.config)
 }
 
+function salesforcesDate2IsoDate (salesforcesDate) {
+  // Convert "2017-09-20" (from Salesforce) to "20-09-2017" (for dhtmlxGantt)
+  return moment(salesforcesDate, "YYYY-MM-DD").format("DD-MM-YYYY")
+}
+
 function raw2Gantt (data) {
   // Transform raw data from REST API to Gantt-compatible format.
   //
-  // The output is a dictionary whose keys are region names ('APAC', 'EMEA', 'US-East' or 'US-West') and values are class details.
+  // The output of the REST API is a dictionary whose keys are region names ('APAC', 'EMEA', 'US-East' or 'US-West') and values are class details.
   //
   // {
   //     "EMEA": [
@@ -111,61 +118,51 @@ function raw2Gantt (data) {
   //         }
   //     ]
   // }
-  //
-  // The expected format for the Gantt chart is:
-  //
-  // [
-  //   ...
-  //   {
-  //     id: 7,
-  //     text: "US-East",
-  //     open: true
-  //   },
-  //   {
-  //     id: 8,
-  //     text: "6.3 Big Data Advanced - Spark & 6.3 Big Data Advanced - MapReduce & 6.3 Big Data Basics Ed 2 @ TD Bank",
-  //     start_date: "20-09-2017",
-  //     duration: 2,
-  //     open: true,
-  //     parent: 7,
-  //     svms: 390,
-  //     storage: 1520,
-  //     salesforce_id: "a9u390000004PLV",
-  //     skytap_environment_id: "22779816"
-  //   },
-  //   ...
-  // ]
-  return {
-    data: [
-      {
-        id: 1,
-        text: "APAC",
-        open: true
-      },
-      {
-        id: 2,
-        text: "6.3 DI Basics @ Duravit",
-        start_date: "03-09-2017",
-        duration:2,
-        open: true,
-        parent: 1,
-        svms: 156,
-        storage: 910,
-        salesforce_id: "a9u390000004Cjj",
-        skytap_environment_id: "22401248"
-      },
-      {
-        id: 3,
-        text: "ILT Class #2",
-        start_date: "02-09-2017",
-        duration:7,
-        open: true,
-        parent: 1,
-        svms: 240,
-        storage: 580
-      }
-    ]
+
+  // Initialize result with empty data
+  let result = {
+    data: [],
+    links: []
   }
+
+  // Initialize result with all possible regions
+  _.forEach(data, function (iltClasses, dataCenter) {
+    result.data.push({
+      id: dataCenter,
+      text: dataCenter,
+      open: true  // so the list of classes in this region is displayed on startup
+    })
+    // Add the ILT classes and link them to their parent (created above)
+    _.forEach(iltClasses, function (iltClass) {
+      // Expected format of a class:
+      //   {
+      //     id: 8,
+      //     text: "6.3 Big Data Advanced - Spark & 6.3 Big Data Advanced - MapReduce & 6.3 Big Data Basics Ed 2 @ TD Bank",
+      //     start_date: "20-09-2017",
+      //     duration: 2,
+      //     open: true,
+      //     parent: "US-East",
+      //     svms: 390,
+      //     storage: 1520,
+      //     salesforce_id: "a9u390000004PLV",
+      //     skytap_environment_id: "22779816"
+      //   }
+      result.data.push({
+        id: iltClass.Id,
+        text: iltClass.Full_Name__c,
+        start_date: salesforcesDate2IsoDate(iltClass.Start_Date__c),
+        duration: iltClass.Total_Duration_Days__c,
+        open: true,
+        parent: dataCenter,
+        svms: iltClass.svms,
+        storage: iltClass.storage,
+        salesforce_id: iltClass.Id,
+        skytap_environment_id: iltClass.Environment_ID__c
+      })
+    })
+  })
+
+  return result
 }
 
 export default {
