@@ -1,12 +1,48 @@
 <!-- TODO Make spotting troublesome days easier by adding concurrent svms per day view, in a dedicated row -->
 
 <template>
-  <div class="container">
-    <div class="right-container">
-      <div class="gantt-selected-info">
-        <div v-if="selectedIltClass">
-          <h2>{{ selectedIltClass.text }}</h2>
-          <ul>
+  <div id="app">
+    <section class="hero is-info">
+      <div class="hero-body">
+        <div class="container">
+          <h1 class="title">
+            Upcoming ILT Classes
+          </h1>
+          <h2 class="subtitle">
+            and the associated Skytap load
+          </h2>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin: 2em 0;">
+<!--
+      <div class="right-container">
+        <ul class="gantt-messages">
+          <li class="gantt-message" v-for="message in messages">{{ message }}</li>
+        </ul>
+      </div>
+-->
+      <!-- @task-updated and @link-updated are defined for sample only, as the grid is read-only -->
+      <gantt
+        :tasks="upcomingIltClasses"
+        @task-updated="logTaskUpdate"
+        @link-updated="logLinkUpdate"
+        @task-selected="selectIltClass"
+      ></gantt>
+    </section>
+
+    <!-- Modal -->
+    <div class="modal" :class="{ 'is-active': showModal }">
+      <div class="modal-background"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">Full Details</p>
+          <button class="delete" aria-label="close" @click="showModal = false"></button>
+        </header>
+        <section class="modal-card-body">
+          <ul v-if="selectedIltClass">
+            <li><strong>{{ selectedIltClass.text}}</strong></li>
             <li><strong>Start Date: </strong>{{ selectedIltClass.start_date | niceDate }}</li>
             <li><strong>End Date: </strong>{{ selectedIltClass.end_date | niceDate }}</li>
             <li><strong>Concurrent SVMs: </strong>{{ selectedIltClass.svms }}</li>
@@ -14,23 +50,12 @@
             <li><a :href="'http://login.salesforce.com/' + selectedIltClass.salesforce_id" target="_blank"><strong>Open in Salesforce</strong></a></li>
             <li><a :href="'https://cloud.skytap.com/configurations/' + selectedIltClass.skytap_environment_id" target="_blank"><strong>Open in Skytap</strong></a></li>
           </ul>
-        </div>
-        <div v-else class="select-task-prompt">
-          <h2>Click any class...</h2>
-        </div>
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button is-info" @click="showModal = false">OK</button>
+        </footer>
       </div>
-      <ul class="gantt-messages">
-        <li class="gantt-message" v-for="message in messages">{{ message }}</li>
-      </ul>
     </div>
-    <!-- @task-updated and @link-updated are defined for sample only, as the grid is read-only -->
-    <gantt
-      class="left-container"
-      :tasks="upcomingIltClasses"
-      @task-updated="logTaskUpdate"
-      @link-updated="logLinkUpdate"
-      @task-selected="selectIltClass"
-    ></gantt>
   </div>
 </template>
 
@@ -175,121 +200,16 @@ export default {
   components: {
     Gantt
   },
-  data () {
-    return {
-      upcomingIltClasses: {
-        data: [
-          {
-            id: 1,
-            text: "APAC",
-            open: true
-          },
-          {
-            id: 2,
-            text: "6.3 DI Basics @ Duravit",
-            start_date: "03-09-2017",
-            duration:2,
-            open: true,
-            parent: 1,
-            svms: 156,
-            storage: 910,
-            salesforce_id: "a9u390000004Cjj",
-            skytap_environment_id: "22401248"
-          },
-          {
-            id: 3,
-            text: "ILT Class #2",
-            start_date: "02-09-2017",
-            duration:7,
-            open: true,
-            parent: 1,
-            svms: 240,
-            storage: 580
-          },
-          {
-            id: 4,
-            text: "EMEA",
-            open: true
-          },
-          {
-            id: 5,
-            text: "ILT Class #1",
-            start_date: "17-09-2017",
-            duration:3,
-            open: true,
-            parent: 4,
-            svms: 520,
-            storage: 980
-          },
-          {
-            id: 6,
-            text: "ILT Class #2",
-            start_date: "05-09-2017",
-            duration:4,
-            open: true,
-            parent: 4,
-            svms: 860,
-            storage: 1240
-          },
-          {
-            id: 7,
-            text: "US-East",
-            open: true
-          },
-          {
-            id: 8,
-            text: "6.3 Big Data Advanced - Spark & 6.3 Big Data Advanced - MapReduce & 6.3 Big Data Basics Ed 2 @ TD Bank",
-            start_date: "20-09-2017",
-            duration: 2,
-            open: true,
-            parent: 7,
-            svms: 390,
-            storage: 1520,
-            salesforce_id: "a9u390000004PLV",
-            skytap_environment_id: "22779816"
-          },
-          {
-            id: 9,
-            text: "ILT Class #2",
-            start_date: "10-09-2017",
-            duration:4,
-            open: true,
-            parent: 7,
-            svms: 860,
-            storage: 1240
-          },
-          {
-            id: 10,
-            text: "US-West",
-            open: true
-          },
-          {
-            id: 11,
-            text: "ILT Class #1",
-            start_date: "01-09-2017",
-            duration:2,
-            open: true,
-            parent: 10,
-            svms: 520,
-            storage: 980
-          },
-          {
-            id: 12,
-            text: "ILT Class #2",
-            start_date: "03-09-2017",
-            duration:2,
-            open: true,
-            parent: 10,
-            svms: 860,
-            storage: 1240
-          }
-        ]
-      },
-      selectedIltClass: null,
-      messages: [],
-      loading: false
-    }
-  },
+  data: () => ({
+    upcomingIltClasses: {
+      data: [],
+      links: []
+    },
+    selectedIltClass: null,
+    messages: [],
+    loading: false,
+    showModal: false
+  }),
   filters: {
     toPercent (val) {
       if(!val) return '0'
@@ -306,6 +226,7 @@ export default {
   methods: {
     selectIltClass (iltClass) {
       this.selectedIltClass = iltClass
+      this.showModal = true
     },
 
     addMessage (message) {
@@ -346,71 +267,31 @@ export default {
 </script>
 
 <style>
-  html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font-family: BlinkMacSystemFont,-apple-system,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
-  }
+@import "~bulma/css/bulma.css";
 
-  .container {
-    height: 100%;
-    width: 100%;
-  }
+/*
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: BlinkMacSystemFont,-apple-system,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue","Helvetica","Arial",sans-serif;
+}
+*/
 
-  .left-container {
-    overflow: hidden;
-    position: relative;
-    height: 100%;
-  }
+.gantt-messages {
+  list-style-type: none;
+  height: 50%;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-left: 5px;
+}
 
-  .right-container {
-    border-right: 1px solid #cecece;
-    float: right;
-    height: 100%;
-    width: 340px;
-    box-shadow: 0 0 5px 2px #aaa;
-    position: relative;
-    z-index:2;
-  }
-
-  .gantt-messages {
-    list-style-type: none;
-    height: 50%;
-    margin: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding-left: 5px;
-  }
-
-  .gantt-messages > .gantt-message {
-    background-color: #f4f4f4;
-    box-shadow:inset 5px 0 #d69000;
-    /*font-family: Geneva, Arial, Helvetica, sans-serif;*/
-    font-size: 14px;
-    margin: 5px 0;
-    padding: 8px 0 8px 10px;
-  }
-
-  .gantt-selected-info {
-    /*border-bottom: 1px solid #cecece;*/
-    box-sizing: border-box;
-    /*font-family: Geneva, Arial, Helvetica, sans-serif;*/
-    height: 50%;
-    line-height: 28px;
-    padding: 10px;
-  }
-
-  .gantt-selected-info h2 {
-    border-bottom: 1px solid #cecece;
-  }
-
-  .select-task-prompt h2{
-    color: #d9d9d9;
-  }
-
-  .gantt-selected-info ul {
-    list-style: none;
-    padding-left: 0;
-  }
+.gantt-messages > .gantt-message {
+  background-color: #f4f4f4;
+  box-shadow:inset 5px 0 #d69000;
+  font-size: 14px;
+  margin: 5px 0;
+  padding: 8px 0 8px 10px;
+}
 </style>
