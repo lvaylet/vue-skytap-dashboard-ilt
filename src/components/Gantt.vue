@@ -64,13 +64,16 @@ export default {
     // Set diagram as read only
     gantt.config.readonly = true
 
+    // force the Gantt chart to automatically change its size to show all tasks
+    // without scrolling
+    gantt.config.autosize = "xy"
+
     // Set date format to be the same as Salesforce
     //gantt.config.api_date = '%Y-%m-%d'
 
     // Display 21 days ahead, even if the ILT classes span less than this duration
     let today = new Date()
     let todayPlus21Days = new Date().setDate(today.getDate() + 21)
-
     gantt.config.start_date = today
     gantt.config.end_date = todayPlus21Days
 
