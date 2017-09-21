@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "axios": "^0.16.2",
+    "bulma": "^0.5.3",
     "dhtmlx-gantt": "^4.2.1",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
