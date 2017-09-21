@@ -1,4 +1,5 @@
 <!-- TODO Make spotting troublesome days easier by adding concurrent svms per day view, in a dedicated row -->
+<!-- TODO Add loading indicator -->
 
 <template>
   <div id="app">
