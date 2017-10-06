@@ -1,6 +1,7 @@
 <!-- TODO Make spotting troublesome days easier by adding concurrent svms per day view, in a dedicated row -->
 <!-- TODO Use calendar view instead of Gantt chart to highlight troublesome days more easily? -->
 <!-- TODO Add loading indicator -->
+<!-- TODO Simplify format of data returned by API. No need to group by data center if calendar view is used -->
 
 <template>
   <div id="app">
