@@ -1,4 +1,5 @@
 <!-- TODO Make spotting troublesome days easier by adding concurrent svms per day view, in a dedicated row -->
+<!-- TODO Use calendar view instead of Gantt chart to highlight troublesome days more easily? -->
 <!-- TODO Add loading indicator -->
 
 <template>
@@ -14,6 +15,10 @@
           </h2>
         </div>
       </div>
+    </section>
+
+    <section style="margin: 2em 0;">
+      <full-calendar :events="events" locale="en" @eventClick="handleEventClick"></full-calendar>
     </section>
 
     <section style="margin: 2em 0;">
@@ -67,7 +72,7 @@ import _ from 'lodash'
 import moment from 'moment'
 
 // TODO Get this IP address from ENV in Dockerfile
-const TRAINING_OPS_SERVER_IP = 'localhost'  // '10.42.100.179'
+const TRAINING_OPS_SERVER_IP = 'localhost'  // '10.42.100.179' or 'localhost' for local testing
 const HTTP_REST_API = axios.create({
   baseURL: `http://${TRAINING_OPS_SERVER_IP}:5050/api/`,
   headers: {
@@ -199,9 +204,11 @@ function raw2Gantt (data) {
 export default {
   name: 'app',
   components: {
-    Gantt
+    Gantt,
+    'full-calendar': require('vue-fullcalendar')
   },
   data: () => ({
+    rawData: {},
     upcomingIltClasses: {
       data: [],
       links: []
@@ -209,8 +216,37 @@ export default {
     selectedIltClass: null,
     messages: [],
     loading: false,
-    showModal: false
+    showModal: false,
   }),
+  computed: {
+    events: function () {
+      let result = []
+
+      // For each region...
+      _.forEach(this.rawData, function (iltClasses, dataCenter) {
+
+        // ..add ILT classes as events in the calendar
+        _.forEach(iltClasses, function (iltClass) {
+
+          result.push({
+            title   : iltClass.Full_Name__c,
+            start   : iltClass.Start_Date__c,
+            end     : iltClass.End_Date__c,
+            cssClass: [dataCenter],
+            extra: {
+              region: dataCenter,
+              svms: iltClass.svms,
+              storage: iltClass.storage,
+              salesforce_id: iltClass.Id,
+              skytap_environment_id: iltClass.Environment_ID__c
+            }
+          })
+        })
+      })
+
+      return result
+    }
+  },
   filters: {
     toPercent (val) {
       if(!val) return '0'
@@ -257,7 +293,9 @@ export default {
     HTTP_REST_API.get('/upcoming-ilt-classes')
       .then(response => {
         this.loading = false
-        this.upcomingIltClasses = raw2Gantt(response.data)
+        this.rawData = response.data
+        //this.upcomingIltClasses = raw2Gantt(response.data)
+        //this.events = raw2CalendarEvents(response.data)
       })
       .catch(e => {
         this.loading = false
@@ -295,4 +333,30 @@ html, body {
   margin: 5px 0;
   padding: 8px 0 8px 10px;
 }
+
+/* Calendar */
+.estimate {
+  font-style: italic;
+}
+
+.full-calendar-body .dates .dates-events .events-week .events-day .event-box p.APAC {
+  color: #ffffff;
+  background-color: #FFBC42;
+}
+
+.full-calendar-body .dates .dates-events .events-week .events-day .event-box p.EMEA {
+  color: #ffffff;
+  background-color: #0496FF;
+}
+
+.full-calendar-body .dates .dates-events .events-week .events-day .event-box p.US-East {
+  color: #ffffff;
+  background-color: #d81159;
+}
+
+.full-calendar-body .dates .dates-events .events-week .events-day .event-box p.US-West {
+  color: #ffffff;
+  background-color: #04e762;
+}
+
 </style>
